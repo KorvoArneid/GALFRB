@@ -1,0 +1,13 @@
+# Ignore everything in the examples/output directory
+examples/output/*
+
+# Except the directory itself
+!examples/output/
+
+# Ignore all .fits files in the galfrb subdirectory
+src/galfrb/data/*.fits
+
+.DS_Store
+
+
+
