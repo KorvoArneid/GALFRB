@@ -446,19 +446,19 @@ def Gen_mock_gal(Nsample     = 1000,
 
         if plot_pdf :
             plt.title("Cumulative density function of stellar mass function")
-            plt.ylabel("$\int_{}^{M_\star} \mathrm{\Phi_\star (M,z) ~ dM}$")
+            plt.ylabel(r"$\int_{}^{M_\star} \mathrm{\Phi_\star (M,z) ~ dM}$")
             plt.xscale('linear')
             plt.xlim(logm_min,logm_max + 0.5)
             plt.legend()
-            plt.xlabel("$\mathrm{\log M_\star ~~[M_\odot]}$")
+            plt.xlabel(r"$\mathrm{\log M_\star ~~[M_\odot]}$")
         if not plot_cdf and plot_pdf : 
             plt.yscale('log') 
             #ymax = 3*Phi_Leja(logm=logm_min, z=zi) / norm
             plt.ylim(1e-6 * yaxis_max, 10*yaxis_max)
             plt.title("Galaxy stellar mass samples from the chosen sampling function")
-            plt.ylabel("$\mathrm{P(M_{\star}, z) ~ [arb.]}$")
+            plt.ylabel(r"$\mathrm{P(M_{\star}, z) ~ [arb.]}$")
             plt.text(x= 1 + logm_min, y=1e-5*yaxis_max, \
-                    s=f"Number of galaxies = {Nsample:.0f}\nWeighted by {weight}\nsfr_ref={sfr_ref}\nmfunc_ref={mfunc_ref}"+"\n$M_\star \in [10^{6.5}, 10^{12.5}]$", color='gray')
+                    s=f"Number of galaxies = {Nsample:.0f}\nWeighted by {weight}\nsfr_ref={sfr_ref}\nmfunc_ref={mfunc_ref}" + "\n" + r"$M_\star \in [10^{6.5}, 10^{12.5}]$", color='gray')
 
         if plot_pdf :
             plt.tight_layout()
@@ -523,21 +523,21 @@ def Gen_mock_gal(Nsample     = 1000,
 
 
         plt.title("Cumulative density function of stellar mass function")
-        plt.ylabel("$\int_{}^{M_\star} \mathrm{\Phi_\star (M,z) ~ dM}$")
+        plt.ylabel(r"$\int_{}^{M_\star} \mathrm{\Phi_\star (M,z) ~ dM}$")
         if not plot_cdf : 
             plt.yscale('log') 
             #ymax = 3*Phi_Leja(logm=logm_min, z=zi) / norm
             plt.ylim(1e-6 * yaxis_max, 10*yaxis_max)
             plt.title("Galaxy samples from the stellar mass function")
-            plt.ylabel("$\mathrm{P(M_{\star}, z) ~ [arb.]}$")
+            plt.ylabel(r"$\mathrm{P(M_{\star}, z) ~ [arb.]}$")
             plt.text(x= 1 + logm_min, y=1e-5*yaxis_max, \
                 s=f"Number of galaxies = {Nsample:.0f}\nWeighted by {weight}\nsfr_ref={sfr_ref}\nmfunc_ref={mfunc_ref}"\
-                    +"\n$M_\star \in [10^{6.5}, 10^{12.5}]$"+f"\nSpatial distribution: {space_dist}", color='gray')
+                    + "\n" + r"$M_\star \in [10^{6.5}, 10^{12.5}]$" + f"\nSpatial distribution: {space_dist}", color='gray')
         
         plt.xscale('linear')
         plt.xlim(logm_min,logm_max + 0.5)
         plt.legend()
-        plt.xlabel("$\mathrm{\log M_\star ~~[M_\odot]}$")
+        plt.xlabel(r"$\mathrm{\log M_\star ~~[M_\odot]}$")
         plt.tight_layout()
         # save figure
         #if not plot_cdf : plt.savefig('figs/sample_galaxy_masses.png', format='png')
@@ -566,7 +566,8 @@ def magnitude_cut(log_mstar = [],
                   density_sfr_color = None,
                   color_gr_grid = None,
                   sfr_grid = None,
-                  Kr_correction = False
+                  Kr_correction = False,
+                  target_type = 'FRB'
                   ):
     """
     Apply the magntitude-limit threshold
@@ -597,6 +598,7 @@ def magnitude_cut(log_mstar = [],
         - color_gr_grid: color array for color-sfr grid
         - sfr_grid: sfr array for color-sfr grid -- in logarithmic form
         - Kr_correction: flag to apply Kr-correction (works only if ml_sampling='advanced')
+        - target_type: 'FRB' or 'CCSN' (determines default scatter/bias settings)
 
     Returns:
         - color_sample: if ml_sampling='advanced', then a color value for each galaxy is sampled and returned
@@ -638,9 +640,12 @@ def magnitude_cut(log_mstar = [],
     # if no sfr information is provided then skip mass to light ratio sampling from probabaility density
     # instead implement the prescription of Sharma et al. (2024)
     if (space_dist in avail_space_dists) and ml_sampling not in ['prescribed', 'advanced'] :
-        if z <= 0.2 : sigma = 0.2 
+        if target_type == 'CCSN':
+            sigma = 0.5 # Larger scatter for CCSN hosts (dust/metallicity variations)
+        elif z <= 0.2 : sigma = 0.2 
         elif z > 0.2 and z <= 0.4 : sigma = 0.26 
-        elif z <= 0.7 and z > 0.4 : sigma = 0.3 
+        elif z <= 0.7 and z > 0.4 : sigma = 0.3
+        else: sigma = 0.3 
         
         # generate a mass-to-light ratio sample
         MtoL_sample = rng.normal(loc=mu, scale=sigma, size=size)
@@ -662,9 +667,12 @@ def magnitude_cut(log_mstar = [],
     #     rmag = Mr_sample + 5*np.log10(lum_dist) + 25 # provided lum_dist is measured in Mpc
 
     elif (space_dist in avail_space_dists) and (len(log_sfr) != 0) and (ml_sampling=='prescribed') :
-        if z <= 0.2 : sigma = 0.2 
+        if target_type == 'CCSN':
+            sigma = 0.5 # Larger scatter for CCSN hosts (dust/metallicity variations)
+        elif z <= 0.2 : sigma = 0.2 
         elif z > 0.2 and z <= 0.4 : sigma = 0.26 
-        elif z <= 0.7 and z > 0.4 : sigma = 0.3 
+        elif z <= 0.7 and z > 0.4 : sigma = 0.3
+        else: sigma = 0.3 
 
         # SFR dependent mass-to-light ratio
         max_MtoL = np.log10(10.) # maximum mass-to-light ratio
@@ -797,7 +805,8 @@ def mock_realization(zbins = [0.,0.3, 0.7],
                  plot_M_L=False,
                  store_output=False,
                  rmag_cut=23.5,
-                 z_posterior=0.3
+                 z_posterior=0.3,
+                 test_type='ks'
                  ):
     
     """
@@ -848,10 +857,34 @@ def mock_realization(zbins = [0.,0.3, 0.7],
         - store_output: flag to store all samples into a h5 data file
         - rmag_cut: magnitude cut for the selection of galaxies
         - z_posterior: redshift at which the posterior is computed (default: 0.3)
+        - test_type: type of statistical test ['ks', 'ad']
     
     Returns:
     """
     if mode != 'nn' : sfr_sampling = False # it makes no sense to sample sfr if the chosen mode is not 'nn'
+
+    # -----------------------------------------------------------
+    # Auto-detection of Simulation Type (FRB vs CCSN)
+    # Fixes Hardcoded FRB Bias for CCSN Simulations
+    # -----------------------------------------------------------
+    target_type = 'FRB'
+    if data_source is not None and data_source.startswith('CCSN'):
+        target_type = 'CCSN'
+        print(f"\n[Auto-Correction] 'data_source={data_source}' detected. Adjusting physics for Core-Collapse Supernovae:")
+        
+        if completeness_handling == 'sharma-like':
+            print(">> Overriding 'completeness_handling' to 'hybrid' (removing FRB-specific low-mass evolution bias).")
+            completeness_handling = 'hybrid'
+            
+        if sigma_norm > 1.0: 
+            print(f">> Overriding 'sigma_norm' from {sigma_norm} to 0.5 (standard galaxy population scatter).")
+            sigma_norm = 0.5
+            
+        if ml_sampling != 'advanced' and ml_sampling != 'prescribed':
+             # Note: We won't force 'advanced' as it requires external grids, but we will print a warning.
+             print(">> RECOMMENDATION: Use 'ml_sampling=advanced' for best CCSN results (accounts for dust/metallicity).")
+    # -----------------------------------------------------------
+
     # Print the input parameters with better formatting
     print("\nInput Parameters:") 
     print(f"  zbins:                 {zbins}")
@@ -872,6 +905,7 @@ def mock_realization(zbins = [0.,0.3, 0.7],
     print(f"  transparency:          {transparency}")
     print(f"  data_source:           {data_source}")
     print(f"  ks_test:               {ks_test}")
+    print(f"  test_type:             {test_type}")
     print(f"  sfr_sampling:          {sfr_sampling}")
     print(f"  space_dist:            {space_dist}")
     print(f"  z_min (spatial):       {z_min}")
@@ -996,10 +1030,10 @@ def mock_realization(zbins = [0.,0.3, 0.7],
             if os.path.exists(folder_path):
                 folder_path = part1 + part2 + part3 + part4 + f'_{count}/'
                 #folder_path = f'./output/mf{mfunc_ref}_sf{sfr_ref}_s{sigma_norm}_m{mode}_W{weight}_N{Nsample}_n{n_realizations}_sd{space_dist}_ml{ml_sampling}_k{Kr_correction}_{count}/'
-                count += 1
-            else : exists = False
-        os.makedirs(folder_path)
-        del count, exists, part1, part2, part3, subpart3, part4, end
+                count += 1, target_type=target_type)
+            else : 
+                try :
+                    _, ind_magcut = magnitude_cut(log_mstar=sample, z=zgal[i], rmag_cut=rmag_cut, plot=False, space_dist=space_dist, target_type=target_type
 
         print(f"Data will be stored in {folder_path}")
 
@@ -1048,9 +1082,13 @@ def mock_realization(zbins = [0.,0.3, 0.7],
             Notes related to hypothesis testing can be found here: 
             https://github.com/astrostatistics-in-crete/2024_summer_school/blob/main/02_Hypothesis/Hypothesis.ipynb
             """
-            pvalue = ks_2samp(np.log10(frbdata_mstar[idx]), sample[ind_magcut], alternative='two-sided', method='auto').pvalue
-            print(f"The ks-test has returned a p-value equal to {pvalue:.2e}.")
-            plt.text(x=np.max(massbins)-2.3, y=0.06, s=f"p-value={pvalue:.1e}", fontsize=10, color='blue')
+            if test_type == 'ks' :
+                pvalue = ks_2samp(np.log10(frbdata_mstar[idx]), sample[ind_magcut], alternative='two-sided', method='auto').pvalue
+                print(f"The ks-test has returned a p-value equal to {pvalue:.2e}.")
+                plt.text(x=np.max(massbins)-2.3, y=0.06, s=f"p-value={pvalue:.1e}", fontsize=10, color='blue')
+            elif test_type == 'ad' :
+                pvalue = utls.run_adtest(np.log10(frbdata_mstar[idx]), sample[ind_magcut], printout=True)
+                plt.text(x=np.max(massbins)-2.3, y=0.06, s=f"p-value={pvalue:.1e}", fontsize=10, color='blue')
 
 
 
@@ -1081,12 +1119,15 @@ def mock_realization(zbins = [0.,0.3, 0.7],
                 # add realization to the grand sample for given redshift range
                 logm_samples.append(post_sample)
                 if space_dist=='delta' : post_z_values = None
-                ml_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, z=zgal[i], rmag_cut=rmag_cut, plot=False, z_values=post_z_values,  space_dist=space_dist)
+                ml_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, z=zgal[i], rmag_cut=rmag_cut, plot=False, z_values=post_z_values,  space_dist=space_dist, target_type=target_type)
                 MtoL_samples.append(ml_sample); magcut_ind_flags.append(ind_magcut)
                 plt.hist(post_sample, cumulative=True, density=True, histtype='step', ls='--', color='red', bins=massbins, lw=1., alpha=alpha, zorder=0)
                 plt.hist(post_sample[ind_magcut], cumulative=True, density=True, histtype='step', ls='-', color='red', bins=massbins, lw=1., alpha=alpha, zorder=0)
                 try :
-                    ks_pvalues[i, n] = utls.run_kstest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
+                    if test_type == 'ks':
+                        ks_pvalues[i, n] = utls.run_kstest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
+                    elif test_type == 'ad':
+                        ks_pvalues[i, n] = utls.run_adtest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
                 except :
                     pass
 
@@ -1166,16 +1207,13 @@ def mock_realization(zbins = [0.,0.3, 0.7],
                 logm_samples.append(post_sample)
                 if space_dist == 'delta' : post_z_values = None
                 try :    
-                    color_sample, Kcorr_sample, ml_sample, mlg_rest_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, log_sfr=log_sfr, log_sfr_mode=log_sfr_mode, z=zgal[i], z_values=post_z_values, rmag_cut=rmag_cut, plot=False, space_dist=space_dist, ml_sampling=ml_sampling, density_sfr_color=density_sfr_color, sfr_grid=sfr_grid, color_gr_grid=color_gr_grid, Kr_correction=Kr_correction)
+                    color_sample, Kcorr_sample, ml_sample, mlg_rest_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, log_sfr=log_sfr, log_sfr_mode=log_sfr_mode, z=zgal[i], z_values=post_z_values, rmag_cut=rmag_cut, plot=False, space_dist=space_dist, ml_sampling=ml_sampling, density_sfr_color=density_sfr_color, sfr_grid=sfr_grid, color_gr_grid=color_gr_grid, Kr_correction=Kr_correction, target_type=target_type)
                     MtoL_samples.append(ml_sample)
                     MtoLg_rest_samples.append(mlg_rest_sample)
                     color_samples.append(color_sample)
                     Kcorr_samples.append(Kcorr_sample)
                 except :
-                    ml_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, log_sfr=log_sfr, log_sfr_mode=log_sfr_mode, z=zgal[i], z_values = post_z_values, rmag_cut=rmag_cut, plot=False, space_dist=space_dist, ml_sampling=ml_sampling, density_sfr_color=density_sfr_color, sfr_grid=sfr_grid, color_gr_grid=color_gr_grid, Kr_correction=Kr_correction)
-                    MtoL_samples.append(ml_sample)
-                
-                try :
+                    ml_sample, ind_magcut = magnitude_cut(log_mstar=post_sample, log_sfr=log_sfr, log_sfr_mode=log_sfr_mode, z=zgal[i], z_values = post_z_values, rmag_cut=rmag_cut, plot=False, space_dist=space_dist, ml_sampling=ml_sampling, density_sfr_color=density_sfr_color, sfr_grid=sfr_grid, color_gr_grid=color_gr_grid, Kr_correction=Kr_correction, target_type=target_type)
                     lgsfr_samples.append(log_sfr)
                     lgsfr_mode_samples.append(log_sfr_mode)
                 except : pass
@@ -1189,7 +1227,10 @@ def mock_realization(zbins = [0.,0.3, 0.7],
                 plt.hist(post_sample[ind_magcut], cumulative=True, density=True, histtype='step', ls='-', color='red', bins=massbins, lw=1., alpha=alpha, zorder=0)
 
                 try :
-                    ks_pvalues[i, n] = utls.run_kstest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
+                    if test_type == 'ks':
+                        ks_pvalues[i, n] = utls.run_kstest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
+                    elif test_type == 'ad':
+                        ks_pvalues[i, n] = utls.run_adtest(post_sample[ind_magcut], np.log10(frbdata_mstar[idx]))
                 except :
                     pass
         

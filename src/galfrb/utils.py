@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import cumulative_trapezoid
 from scipy.interpolate import RectBivariateSpline, RegularGridInterpolator
 from scipy.special import beta as sp_beta
-from scipy.stats import ks_2samp
+from scipy.stats import ks_2samp, anderson_ksamp
 sign = lambda x: 2*np.heaviside(x, 0.5) - 1 # define sign function
 from astropy.cosmology import FlatLambdaCDM # https://docs.astropy.org/en/stable/cosmology/index.html
 from astropy.cosmology import z_at_value 
@@ -803,6 +803,31 @@ def run_kstest(data_sample1=None, data_sample2=None, printout=False):
         pvalue = ks_2samp(data_sample1, data_sample2, alternative='two-sided', method='auto').pvalue
         if printout : print(f"The ks-test has returned a p-value equal to {pvalue:.2e}.")
         #plt.text(x=np.max(massbins)-2.1, y=0.05, s=f"p-value={pvalue:.1e}", fontsize=10, color='blue')
+        return pvalue
+
+
+def run_adtest(data_sample1=None, data_sample2=None, printout=False):
+        # run ad-test
+        """
+        Anderson-Darling Test for k-samples.
+        Note: The p-value (significance_level) is often capped at 0.001 (0.1%) and 0.25 (25%) 
+        due to the nature of the critical value lookup table.
+        """
+        try:
+            res = anderson_ksamp([data_sample1, data_sample2])
+            pvalue = res.significance_level
+            statistic = res.statistic
+        except Exception as e:
+            if printout: print(f"AD Test Failed: {e}")
+            return 0.0
+
+        if printout : 
+            print(f"The ad-test has returned a statistic of {statistic:.2f} and p-value {pvalue:.2e}.")
+            if pvalue <= 0.001:
+                print("   (Note: p-value is capped at 0.001 by scipy implementation)")
+            elif pvalue >= 0.25:
+                print("   (Note: p-value is capped at 0.25 by scipy implementation)")
+        
         return pvalue
 
 
